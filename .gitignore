@@ -1,0 +1,13 @@
+# This file specifies the files and directories that Git should ignore when committing.
+# Auto-generated files, dependencies, and local configurations are excluded 
+# from being pushed to the repository.
+
+*.lock.hcl
+*.terraform
+
+.venv/
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

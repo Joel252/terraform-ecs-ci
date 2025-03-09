@@ -1,0 +1,16 @@
+# This file specifies the files and directories that Docker should ignore when building the image.
+# Unnecessary or sensitive files are excluded here to keep the image lightweight and safe.
+
+.git*
+
+*.tf
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+
+.venv/
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
