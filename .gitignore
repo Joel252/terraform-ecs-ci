@@ -6,16 +6,10 @@ __pycache__/
 **/__pycache__
 **/.venv
 **/.env
-**/.git
-**/.gitignore
 **/.settings
 **/.vs
 **/.vscode
-**/.dockerignore
-**/Dockerfile*
 **/.terraform/
 **/*.tfstate
 **/*.tfstate.*
-**/*.tf
 **/*.lock.hcl
-README.md
