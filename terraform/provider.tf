@@ -1,6 +1,13 @@
 /*
- * Configure the provider that Terraform will use to interact with the API's and cloud
- * services providers.
+ * Configures the AWS provider for Terraform, ensuring all resources are deployed in the specified
+ * region with consistent settings.  
+ * 
+ * This setup:
+ * - Defines the AWS region for resource deployment.  
+ * - Applies default tags to all resources for better organization.  
+ * - Specifies the required AWS provider version for compatibility.  
+ * 
+ * These settings help standardize and streamline infrastructure deployment using this project template.  
  */
 
 provider "aws" {
