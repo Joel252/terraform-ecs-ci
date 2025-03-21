@@ -10,25 +10,25 @@ variable "name" {
   default     = "tf"
 }
 
-variable "num_az_to_use" {
-  description = "Number of desired availability zones."
-  type        = number
-  default     = 2
-
-  validation {
-    condition     = var.num_az_to_use > 0 && var.num_az_to_use <= length(data.aws_availability_zones.available.names)
-    error_message = "az_count must be greater than 0 and less than or equal to the number of available AZs."
-  }
+variable "public_subnets" {
+  description = "List of CIDR blocks for public subnets."
+  type        = list(string)
 }
 
-variable "create_private_subnets" {
-  description = "Flag to indicate whether private subnets should be created."
-  type        = bool
-  default     = false
+variable "private_subnets" {
+  description = "List of CIDR blocks for private subnets."
+  type        = list(string)
+  default     = []
 }
 
 variable "enable_nat_gateway" {
   description = "Flag to indicate whether nat gateways should be created."
   type        = bool
   default     = false
+}
+
+variable "single_nat_gateway" {
+  description = "Flag to indicate whether a single NAT gateway should be created and shared."
+  type        = bool
+  default     = true
 }

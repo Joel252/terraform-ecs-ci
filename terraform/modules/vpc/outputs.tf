@@ -10,5 +10,5 @@ output "public_subnet_ids" {
 
 output "private_subnet_ids" {
   description = "List of private subnet IDs."
-  value       = var.create_private_subnets ? aws_subnet.private[*].id : []
+  value       = aws_subnet.private[*].id
 }
