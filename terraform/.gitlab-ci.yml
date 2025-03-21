@@ -1,0 +1,131 @@
+stages:
+  - docs
+  - init
+  - validate
+  - plan
+  - deploy
+  - destroy
+
+default:
+  tags:
+    - runner-dummy
+
+variables:
+  TF_VERSION: latest
+  TF_PLAN_NAME: tfplan
+  ENVIRONMENT: $([ "$CI_COMMIT_BRANCH" == "main" ] && echo "production" || echo "development")
+
+update_docs:
+  image:
+    name: quay.io/terraform-docs/terraform-docs:latest
+    entrypoint: [""]
+  stage: docs
+  environment:
+    name: $ENVIRONMENT
+  before_script:
+    - git config --global user.email "ci-bot@gitlab.com"
+    - git config --global user.name "GitLab CI Bot"
+  script:
+    - terraform-docs markdown table . --output-file README.md
+    - git add README.md modules/*/README.md
+    - |
+      if ! git diff --cached --exit-code; then
+        git commit -m "docs:Update terraform documentation";
+        git commit push origin $CI_COMMIT_BRANCH;
+      fi
+  only:
+    - main
+    - dev
+
+terraform_init:
+  image:
+    name: hashicorp/terraform:${TF_VERSION}
+    entrypoint: [""]
+  stage: init
+  environment:
+    name: $ENVIRONMENT
+  variables:
+    TF_WORKSPACE: $CI_COMMIT_REF_NAME
+    TF_BACKEND_ADDRESS: https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/terraform/state/$TF_WORKSPACE
+  before_script:
+    - terraform init \
+      -backend-config="address=$TF_BACKEND_ADDRESS" \
+      -backend-config="lock_address=$TF_BACKEND_ADDRESS/lock" \
+      -backend-config="unlock_address=$TF_BACKEND_ADDRESS/lock" \
+      -backend-config="username=$CI_JOB_TOKEN" \
+      -backend-config="password=$CI_JOB_TOKEN" \
+      -backend-config="lock_method=POST" \
+      -backend-config="unlock_method=DELETE"
+      -backend-config=retry_wait_min=5
+    - terraform workspace new $TF_WORKSPACE || terraform workspace select $TF_WORKSPACE
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/terraform/.terraform
+    expire_in: 2 days
+  only:
+    - main
+    - dev
+
+terraform_validate:
+  image:
+    name: hashicorp/terraform:${TF_VERSION}
+    entrypoint: [""]
+  stage: validate
+  environment:
+    name: $ENVIRONMENT
+  script:
+    - terraform --version
+    - terraform fmt
+    - terraform validate
+  only:
+    - main
+    - dev
+
+terraform_plan:
+  image:
+    name: hashicorp/terraform:${TF_VERSION}
+    entrypoint: [""]
+  stage: plan
+  environment:
+    name: $ENVIRONMENT
+  script:
+    - terraform plan -out=$TF_PLAN_NAME
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/terraform/$TF_PLAN_NAME
+  only:
+    - main
+    - dev
+
+terraform_apply:
+  image:
+    name: hashicorp/terraform:${TF_VERSION}
+    entrypoint: [""]
+  stage: deploy
+  environment:
+    name: $ENVIRONMENT
+  script:
+    - terraform apply -auto-approve $TF_PLAN_NAME
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/terraform/terraform.tfstate
+  when: manual
+  needs: [plan]
+  only:
+    - main
+    - dev
+
+terraform_destroy:
+  image:
+    name: hashicorp/terraform:${TF_VERSION}
+    entrypoint: [""]
+  stage: destroy
+  environment:
+    name: $ENVIRONMENT
+  script:
+    - terraform destroy -auto-approve
+  when: manual
+  needs: [deploy]
+  only:
+    - main
+    - dev
