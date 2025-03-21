@@ -23,3 +23,12 @@ variable "zone_id" {
   EOF
   type        = string
 }
+
+variable "evaluate_target_health" {
+  description = <<EOF
+  Set to true if you want Route 53 to determine whether to respond to DNS queries using 
+  this resource record set by checking the health of the resource record set.
+  EOF
+  type        = bool
+  default     = false
+}
