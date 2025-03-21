@@ -50,3 +50,18 @@ variable "target_protocol" {
   type        = string
   default     = "HTTP"
 }
+
+variable "health_check_interval" {
+  description = <<EOF
+  Approximate amount of time, in seconds, between health checks of an individual target. 
+  The range is 5-300. Defaults to 30.
+  EOF
+  type        = number
+  default     = 30
+}
+
+variable "health_check_path" {
+  description = "Destination for the health check request. For HTTP and HTTPS health checks, the default is /"
+  type        = string
+  default     = "/"
+}
