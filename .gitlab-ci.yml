@@ -10,6 +10,9 @@ default:
   tags:
     - runner-dummy
 
+before_script:
+  - cd terraform
+
 variables:
   TF_VERSION: latest
   TF_PLAN_NAME: tfplan
