@@ -6,7 +6,7 @@ resource "aws_lb" "main" {
   name               = format("%s-alb", var.name)
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.security.id]
+  security_groups    = [aws_security_group.lb.id]
   subnets            = var.subnets
 }
 
@@ -14,8 +14,8 @@ resource "aws_lb" "main" {
 # Security Group
 ############################
 
-resource "aws_security_group" "security" {
-  name   = format("%s-security", var.name)
+resource "aws_security_group" "lb" {
+  name   = format("%s-lb", var.name)
   vpc_id = var.vpc_id
 
   ingress {
@@ -86,10 +86,11 @@ resource "aws_lb_listener" "http" {
 ############################
 
 resource "aws_lb_target_group" "target" {
-  name     = format("%s-target", var.name)
-  port     = var.target_port
-  protocol = var.target_protocol
-  vpc_id   = var.vpc_id
+  name        = format("%s-target", var.name)
+  port        = var.target_port
+  protocol    = var.target_protocol
+  vpc_id      = var.vpc_id
+  target_type = "ip"
 
   health_check {
     path                = var.health_check_path
