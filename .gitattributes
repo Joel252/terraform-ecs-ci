@@ -1,5 +1,0 @@
-# Avoid merge conflicts in these files.
-# In case of conflict, the main branch version will be kept.
-
-.gitlab-ci.yml merge=ours
-terraform/** merge=ours
