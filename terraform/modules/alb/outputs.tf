@@ -12,3 +12,8 @@ output "security_group_id" {
   description = "Load balancer security group ID"
   value       = aws_security_group.lb.id
 }
+
+output "target_group_arn" {
+  description = "ARN of the Target group."
+  value       = aws_lb_target_group.main.arn
+}
