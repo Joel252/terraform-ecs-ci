@@ -1,7 +1,7 @@
-############################
-# ALB
-############################
-
+########################################
+# Application Load Balancer (ALB)
+########################################
+# The ALB is public by default, as indicated by the `internal = false` setting
 resource "aws_lb" "main" {
   name               = format("%s-alb", var.name)
   internal           = false
@@ -10,12 +10,14 @@ resource "aws_lb" "main" {
   subnets            = var.subnets
 }
 
-############################
-# Security Group
-############################
-
+########################################
+# Security Group for ALB
+########################################
+# This security group allows HTTP and HTTPS traffic to the ALB
+# Note that ingress rules are open to all IPs (0.0.0.0/0), which may not be suitable for all use cases
+# Modify the CIDR blocks if you need to restrict access
 resource "aws_security_group" "lb" {
-  name   = format("%s-lb", var.name)
+  name   = format("%s-alb-sg", var.name)
   vpc_id = var.vpc_id
 
   ingress {
@@ -42,11 +44,15 @@ resource "aws_security_group" "lb" {
   }
 }
 
-############################
-# Listeners
-############################
-
+##################################
+# Listeners for ALB
+##################################
+# Note that the listeners are defined for both HTTP and HTTPS traffic
+# Delete either of these if your application doesn't need them, but you need at least one
+# HTTPS listener is only created if a certificate ARN is provided
+# Also, When you provide a certificate, HTTP listener redirects the traffict to HTTPS
 resource "aws_lb_listener" "https" {
+  # Only created if a certificate ARN is provided
   count = var.certificate_arn != "" ? 1 : 0
 
   load_balancer_arn = aws_lb.main.arn
@@ -57,7 +63,7 @@ resource "aws_lb_listener" "https" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.target.arn
+    target_group_arn = aws_lb_target_group.main.arn
   }
 }
 
@@ -67,6 +73,7 @@ resource "aws_lb_listener" "http" {
   protocol          = "HTTP"
 
   default_action {
+    # Redirect to HTTPS if there is a certificate
     type = var.certificate_arn != "" ? "redirect" : "forward"
     dynamic "redirect" {
       for_each = var.certificate_arn != "" ? [1] : []
@@ -77,16 +84,20 @@ resource "aws_lb_listener" "http" {
         status_code = "HTTP_301"
       }
     }
-    target_group_arn = var.certificate_arn != "" ? null : aws_lb_target_group.target.arn
+
+    # If there is no certificate, it is forwarded to the destination group
+    target_group_arn = var.certificate_arn != "" ? null : aws_lb_target_group.main.arn
   }
 }
 
-############################
+##################################
 # Target Group
-############################
-
-resource "aws_lb_target_group" "target" {
-  name        = format("%s-target", var.name)
+##################################
+# Health checks are configured to ensure that only healthy instances receive traffic
+# If you need to adjust the number of checks required for an instance to be considered healthy or unhealthy, 
+# modify the `healthy_threshold` and `unhealthy_threshold` values ​​in this configuration
+resource "aws_lb_target_group" "main" {
+  name        = format("%s-alb-target", var.name)
   port        = var.target_port
   protocol    = var.target_protocol
   vpc_id      = var.vpc_id

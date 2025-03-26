@@ -42,7 +42,7 @@ variable "certificate_arn" {
 variable "target_port" {
   description = "Load balancer target group port."
   type        = number
-  default     = 80
+  default     = 8080
 }
 
 variable "target_protocol" {

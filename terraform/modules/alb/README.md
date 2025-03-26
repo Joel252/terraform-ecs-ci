@@ -27,8 +27,8 @@ No modules.
 | [aws_lb.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb) | resource |
 | [aws_lb_listener.http](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener) | resource |
 | [aws_lb_listener.https](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener) | resource |
-| [aws_lb_target_group.target](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
-| [aws_security_group.security](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
+| [aws_lb_target_group.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
+| [aws_security_group.lb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 
 ## Inputs
 
@@ -40,7 +40,7 @@ No modules.
 | <a name="input_name"></a> [name](#input\_name) | Name of the LB. This name must be unique within your AWS account, can have a maximum of <br/>  32 characters, must contain only alphanumeric characters or hyphens, and must not begin <br/>  or end with a hyphen. If not specified, Terraform will autogenerate a name beginning <br/>  with tf-lb. | `string` | `"tf-lb"` | no |
 | <a name="input_ssl_policy"></a> [ssl\_policy](#input\_ssl\_policy) | Name of the SSL Policy for the listener. Required if protocol is HTTPS or TLS. <br/>  Default is ELBSecurityPolicy-2016-08. | `string` | `"ELBSecurityPolicy-2016-08"` | no |
 | <a name="input_subnets"></a> [subnets](#input\_subnets) | List of subnet IDs to attach to the LB. For Load Balancers of type network subnets can only <br/>  be added (see Availability Zones), deleting a subnet for load balancers of type network will <br/>  force a recreation of the resource. | `list(string)` | `[]` | no |
-| <a name="input_target_port"></a> [target\_port](#input\_target\_port) | Load balancer target group port. | `number` | `80` | no |
+| <a name="input_target_port"></a> [target\_port](#input\_target\_port) | Load balancer target group port. | `number` | `8080` | no |
 | <a name="input_target_protocol"></a> [target\_protocol](#input\_target\_protocol) | Load balancer target group protocol. | `string` | `"HTTP"` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | Identifier of the VPC in which to create the target group. | `string` | n/a | yes |
 
@@ -49,6 +49,8 @@ No modules.
 | Name | Description |
 |------|-------------|
 | <a name="output_dns_name"></a> [dns\_name](#output\_dns\_name) | DNS name of the load balancer. |
+| <a name="output_security_group_id"></a> [security\_group\_id](#output\_security\_group\_id) | Load balancer security group ID |
+| <a name="output_target_group_arn"></a> [target\_group\_arn](#output\_target\_group\_arn) | ARN of the Target group. |
 | <a name="output_zone_id"></a> [zone\_id](#output\_zone\_id) | Canonical hosted zone ID of the load balancer (to be used in a Route 53 alias reacord). |
 <!-- END_TF_DOCS -->
 
