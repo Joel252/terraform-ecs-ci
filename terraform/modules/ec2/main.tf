@@ -8,6 +8,7 @@ resource "aws_launch_template" "ecs_ec2" {
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.ecs_ec2.id]
 
+  # Defines the root volume configuration for the EC2 instances.
   block_device_mappings {
     device_name = "/dev/xvda"
     ebs {
@@ -16,6 +17,8 @@ resource "aws_launch_template" "ecs_ec2" {
     }
   }
 
+  # Enables metadata options for enhanced security.
+  # `http_tokens = "required"` ensures that IMDSv2 is used, preventing unauthorized access.
   metadata_options {
     http_tokens                 = "required"
     http_endpoint               = "enabled"
@@ -37,13 +40,15 @@ resource "aws_launch_template" "ecs_ec2" {
     }
   }
 
+  # User data script to configure the EC2 instance on launch.
   user_data = templatefile("${path.module}/init.sh", { cluster_name = var.name })
 }
 
 ############################
 # Security Group
 ############################
-
+# The security group allows SSH access to the EC2 instances and unrestricted outbound traffic.
+# Ensure the `security_group_ids` variable is properly configured to restrict access as needed.
 resource "aws_security_group" "ecs_ec2" {
   name   = format("%s-ecs-ec2", var.name)
   vpc_id = var.vpc_id
@@ -67,7 +72,8 @@ resource "aws_security_group" "ecs_ec2" {
 ############################
 # Auto Scaling Group
 ############################
-
+# The Auto Scaling Group (ASG) manages the EC2 instances for the ECS cluster.
+# It ensures the desired number of instances are running and scales based on demand.
 resource "aws_autoscaling_group" "ecs" {
   name                = format("%s-ecs", var.name)
   desired_capacity    = var.num_instances
@@ -90,7 +96,8 @@ resource "aws_autoscaling_group" "ecs" {
 ############################
 # IAM Role
 ############################
-
+# The IAM role grants permissions for EC2 instances to interact with AWS services.
+# It includes policies for ECS and SSM (for instance management).
 resource "aws_iam_role" "instance" {
   name_prefix        = "ECSRole"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
