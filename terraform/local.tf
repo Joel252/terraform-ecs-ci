@@ -4,7 +4,7 @@ locals {
   environment = "test"
   project     = "web"
 
-  name = format("%s-%s-%s", local.namespace, local.environment, local.project)
+  project_name = format("%s-%s-%s", local.namespace, local.environment, local.project)
 
   tags = {
     ManageBy    = "Terraform"
