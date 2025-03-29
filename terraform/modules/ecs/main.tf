@@ -1,7 +1,8 @@
 ############################
 # ECS Cluster
 ############################
-
+# Defines the ECS cluster where tasks and services will run.
+# Ensure the cluster name is unique within your AWS account.
 resource "aws_ecs_cluster" "main" {
   name = var.name
 }
@@ -9,7 +10,8 @@ resource "aws_ecs_cluster" "main" {
 ############################
 # Capacity Providers
 ############################
-
+# The capacity provider links the ECS cluster to an Auto Scaling Group (ASG).
+# Managed scaling ensures that the ASG scales automatically based on ECS task demand.
 resource "aws_ecs_capacity_provider" "main" {
   name = format("%s-ec2", var.name)
 
@@ -25,6 +27,8 @@ resource "aws_ecs_capacity_provider" "main" {
   }
 }
 
+# Associates the capacity provider with the ECS cluster.
+# The default strategy ensures tasks are placed using the capacity provider.
 resource "aws_ecs_cluster_capacity_providers" "main" {
   cluster_name       = aws_ecs_cluster.main.name
   capacity_providers = [aws_ecs_capacity_provider.main.name]
@@ -39,7 +43,8 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 ############################
 # Task Definition
 ############################
-
+# Defines the ECS task, which specifies the container configuration.
+# Includes details like the container image, CPU, memory, and logging configuration.
 resource "aws_ecs_task_definition" "main" {
   family                   = format("%s-task", var.name)
   requires_compatibilities = ["EC2"]
@@ -67,6 +72,7 @@ resource "aws_ecs_task_definition" "main" {
         }
       ],
 
+      # Configures CloudWatch Logs for the container.
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -82,7 +88,8 @@ resource "aws_ecs_task_definition" "main" {
 ############################
 # ECS Service
 ############################
-
+# Manages the ECS service, which runs and maintains the desired number of tasks.
+# Includes load balancer integration and capacity provider strategy.
 resource "aws_ecs_service" "main" {
   name            = format("%s-service", var.name)
   cluster         = aws_ecs_cluster.main.id
@@ -97,6 +104,7 @@ resource "aws_ecs_service" "main" {
   force_new_deployment = true
   force_delete         = true
 
+  # Trigger redeployment when the timestamp changes.
   triggers = {
     redeployment = timestamp()
   }
@@ -106,6 +114,7 @@ resource "aws_ecs_service" "main" {
     weight            = 100
   }
 
+  # Integrates the ECS service with an ALB for traffic routing.
   load_balancer {
     target_group_arn = var.alb_target_group_arn
     container_name   = format("%s-container", var.name)
@@ -116,7 +125,8 @@ resource "aws_ecs_service" "main" {
 ############################
 # Security Group
 ############################
-
+# Security group for ECS tasks. Allows traffic from the ALB to the container port.
+# Ensure the ALB security group ID is correctly passed as a variable.
 resource "aws_security_group" "ecs" {
   name   = format("%s-ecs", var.name)
   vpc_id = var.vpc_id
@@ -140,7 +150,8 @@ resource "aws_security_group" "ecs" {
 ############################
 # Cloud Watch
 ############################
-
+# Configures a CloudWatch log group for ECS task logs.
+# The retention period is configurable via the `logs_retention` variable.
 resource "aws_cloudwatch_log_group" "ecs_log_group" {
   name              = "/ecs/${var.name}-tasks"
   retention_in_days = var.logs_retention
@@ -165,7 +176,7 @@ resource "aws_iam_policy" "ecs_logs_policy" {
 ############################
 # IAM Role
 ############################
-
+# IAM role for ECS tasks to interact with AWS services.
 resource "aws_iam_role" "ecs_task_role" {
   count = var.task_role_name != null ? 0 : 1
 
@@ -173,6 +184,7 @@ resource "aws_iam_role" "ecs_task_role" {
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
+# IAM role for ECS tasks to interact with AWS services.
 resource "aws_iam_role" "ecs_exec_role" {
   count = var.execution_role_name != null ? 0 : 1
 
@@ -180,6 +192,7 @@ resource "aws_iam_role" "ecs_exec_role" {
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
+# Attaches the ECS execution role policy to the IAM role.
 resource "aws_iam_role_policy_attachment" "ecs_exec_role_policy" {
   role       = var.execution_role_name != null ? var.execution_role_name : aws_iam_role.ecs_exec_role[0].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
