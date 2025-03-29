@@ -1,3 +1,13 @@
 #!/bin/bash
+sudo su -
+yum update -y
 
-echo ECS_CLUSTER=example-cluster >>/etc/ecs/ecs.config
+# Install ECS Agent
+sudo amazon-linux-extras install -y ecs
+
+# Register ECS Cluster
+mkdir -p /etc/ecs/
+echo "ECS_CLUSTER=${cluster_name}" > /etc/ecs/ecs.config
+
+# Enable and Start ECS Agent
+systemctl enable --now ecs

@@ -6,7 +6,7 @@ resource "aws_launch_template" "ecs_ec2" {
   name_prefix            = format("%s-ecs", var.name)
   image_id               = data.aws_ami.amazon_linux_2.id
   instance_type          = var.instance_type
-  vpc_security_group_ids = [aws_security_group.ecs.id]
+  vpc_security_group_ids = [aws_security_group.ecs_ec2.id]
 
   block_device_mappings {
     device_name = "/dev/xvda"
@@ -14,6 +14,12 @@ resource "aws_launch_template" "ecs_ec2" {
       volume_size = var.volume_size
       volume_type = var.volume_type
     }
+  }
+
+  metadata_options {
+    http_tokens                 = "required"
+    http_endpoint               = "enabled"
+    http_put_response_hop_limit = 2
   }
 
   iam_instance_profile {
@@ -31,23 +37,23 @@ resource "aws_launch_template" "ecs_ec2" {
     }
   }
 
-  user_data = filebase64("${path.module}/init.sh")
+  user_data = templatefile("${path.module}/init.sh", { cluster_name = var.name })
 }
 
 ############################
 # Security Group
 ############################
 
-resource "aws_security_group" "ecs" {
-  name   = format("%s-ecs", var.name)
+resource "aws_security_group" "ecs_ec2" {
+  name   = format("%s-ecs-ec2", var.name)
   vpc_id = var.vpc_id
 
   ingress {
-    description     = "Allow http traffic from ALB"
-    from_port       = var.container_port
-    to_port         = var.container_port
+    description     = "Allow SSH traffic"
+    from_port       = 22
+    to_port         = 22
     protocol        = "tcp"
-    security_groups = var.alb_security_group != null ? [var.alb_security_group] : []
+    security_groups = var.security_group_ids
   }
 
   egress {
@@ -85,19 +91,23 @@ resource "aws_autoscaling_group" "ecs" {
 # IAM Role
 ############################
 
-resource "aws_iam_role" "ecs" {
-  name_prefix        = format("%s-ecs-role", var.name)
-  assume_role_policy = data.aws_iam_policy_document.ecs_doc.json
+resource "aws_iam_role" "instance" {
+  name_prefix        = "ECSRole"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
   description        = "Allows EC2 instances to call AWS services on your behalf."
 }
 
-resource "aws_iam_role_policy_attachment" "ecs" {
-  role       = aws_iam_role.ecs.name
+resource "aws_iam_role_policy_attachment" "instance" {
+  role       = aws_iam_role.instance.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
 }
 
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.instance.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 resource "aws_iam_instance_profile" "ecs" {
-  name_prefix = format("%s-profile")
-  path        = "ecs/instance"
-  role        = aws_iam_role.ecs.name
+  name = "ec2-ssm-instance-profile"
+  role = aws_iam_role.instance.name
 }

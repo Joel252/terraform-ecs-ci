@@ -27,10 +27,10 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "alb_security_group" {
-  description = "ALB security group ID."
-  type        = string
-  default     = null
+variable "security_group_ids" {
+  description = "List of Security Group IDs to allow access to the instance via SSH."
+  type        = list(string)
+  default     = []
 }
 
 variable "subnet_ids" {
@@ -54,10 +54,4 @@ variable "max_instances" {
   description = "Maximum size of the Auto Scaling Group."
   type        = number
   default     = 2
-}
-
-variable "container_port" {
-  description = "The port number on the container that's bound to the user-specified or automatically assigned host port."
-  type        = number
-  default     = 80
 }
