@@ -1,7 +1,8 @@
 ############################
 # VPC
 ############################
-
+# The main VPC resource. DNS support and hostnames are enabled to allow
+# resources within the VPC to resolve internal and external DNS names.
 resource "aws_vpc" "main" {
   cidr_block           = var.cidr_block
   enable_dns_hostnames = true
@@ -27,7 +28,8 @@ resource "aws_internet_gateway" "main" {
 ############################
 # Subnets
 ############################
-
+# Public subnets are configured to assign public IPs to instances automatically.
+# These subnets are typically used for resources that need direct internet access.
 resource "aws_subnet" "public" {
   count = length(var.public_subnets)
 
@@ -41,6 +43,8 @@ resource "aws_subnet" "public" {
   }
 }
 
+# Private subnets are used for resources that do not require direct internet access.
+# These subnets are isolated and typically communicate with the internet via NAT Gateways.
 resource "aws_subnet" "private" {
   count = length(var.private_subnets)
 
@@ -56,8 +60,9 @@ resource "aws_subnet" "private" {
 ############################
 # Nat Gateway
 ############################
-
-resource "aws_eip" "nat" {
+# Elastic IPs are allocated for NAT Gateways to provide internet access
+# to private subnets. Ensure the number of EIPs matches the NAT Gateway count.
+resource "aws_eip" "nat_ip" {
   count = local.nat_count
 
   domain = "vpc"
@@ -67,10 +72,12 @@ resource "aws_eip" "nat" {
   }
 }
 
+# NAT Gateways allow private subnets to access the internet without exposing
+# the resources directly. Ensure that each NAT Gateway is placed in a public subnet.
 resource "aws_nat_gateway" "nat" {
   count = local.nat_count
 
-  allocation_id = aws_eip.nat[count.index].id
+  allocation_id = aws_eip.nat_ip[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
 
   tags = {
@@ -81,7 +88,8 @@ resource "aws_nat_gateway" "nat" {
 ############################
 # Route Tables
 ############################
-
+# The public route table routes all traffic (0.0.0.0/0) to the Internet Gateway.
+# This is required for public subnets to communicate with the internet.
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -102,6 +110,8 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
+# Private route tables route traffic from private subnets to the internet
+# via NAT Gateways. If NAT Gateways are disabled, no routes are created.
 resource "aws_route_table" "private" {
   count = local.private_route_table_count
 
