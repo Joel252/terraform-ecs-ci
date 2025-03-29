@@ -11,7 +11,7 @@ resource "aws_ecs_cluster" "main" {
 ############################
 
 resource "aws_ecs_capacity_provider" "main" {
-  name = format("%s-ecs-ec2", var.name)
+  name = format("%s-ec2", var.name)
 
   auto_scaling_group_provider {
     auto_scaling_group_arn = var.auto_scaling_group_arn
@@ -46,15 +46,15 @@ resource "aws_ecs_task_definition" "main" {
   network_mode             = "awsvpc"
   cpu                      = var.cpu
   memory                   = var.memory
-  task_role_arn            = aws_iam_role.ecs_task_role.arn
-  execution_role_arn       = aws_iam_role.ecs_exec_role.arn
+  task_role_arn            = var.task_role_name != null ? data.aws_iam_role.task[0].arn : aws_iam_role.ecs_task_role[0].arn
+  execution_role_arn       = var.execution_role_name != null ? data.aws_iam_role.execution[0].arn : aws_iam_role.ecs_exec_role[0].arn
 
   runtime_platform {
     operating_system_family = "LINUX"
     cpu_architecture        = "X86_64"
   }
 
-  container_definitions = jsondecode([
+  container_definitions = jsonencode([
     {
       name      = format("%s-container", var.name)
       image     = var.image
@@ -64,8 +64,6 @@ resource "aws_ecs_task_definition" "main" {
       portMappings = [
         {
           containerPort = var.container_port
-          host_port     = var.container_port
-          protocol      = "tcp"
         }
       ],
 
@@ -85,19 +83,19 @@ resource "aws_ecs_task_definition" "main" {
 # ECS Service
 ############################
 
-resource "aws_ecs_service" "ecs_service" {
+resource "aws_ecs_service" "main" {
   name            = format("%s-service", var.name)
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.main.id
-  desired_count   = var.num_instances
-  launch_type     = "EC2"
+  desired_count   = var.desired_count
 
   network_configuration {
     subnets         = var.subnet_ids
-    security_groups = [aws_security_group.ecs_security_group.id]
+    security_groups = [aws_security_group.ecs.id]
   }
 
   force_new_deployment = true
+  force_delete         = true
 
   triggers = {
     redeployment = timestamp()
@@ -120,8 +118,8 @@ resource "aws_ecs_service" "ecs_service" {
 ############################
 
 resource "aws_cloudwatch_log_group" "ecs_log_group" {
-  name              = "/ecs/${var.name}-task"
-  retention_in_days = 7
+  name              = "/ecs/${var.name}-tasks"
+  retention_in_days = var.logs_retention
 }
 
 resource "aws_iam_policy" "ecs_logs_policy" {
@@ -145,16 +143,20 @@ resource "aws_iam_policy" "ecs_logs_policy" {
 ############################
 
 resource "aws_iam_role" "ecs_task_role" {
-  name_prefix        = "demo-ecs-task-role"
-  assume_role_policy = data.aws_iam_policy_document.ecs_task_doc.json
+  count = var.task_role_name != null ? 0 : 1
+
+  name_prefix        = "ECSTaskRole"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
 resource "aws_iam_role" "ecs_exec_role" {
-  name_prefix        = "demo-ecs-exec-role"
-  assume_role_policy = data.aws_iam_policy_document.ecs_task_doc.json
+  count = var.execution_role_name != null ? 0 : 1
+
+  name_prefix        = "ECSExecutionRole"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_exec_role_policy" {
-  role       = aws_iam_role.ecs_exec_role.name
+  role       = var.execution_role_name != null ? var.execution_role_name : aws_iam_role.ecs_exec_role[0].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }

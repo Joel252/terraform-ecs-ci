@@ -13,22 +13,30 @@ variable "cpu" {
   description = "Number of cpu units used by the task."
   type        = number
   default     = 256
+  validation {
+    condition     = var.cpu > 0
+    error_message = "CPU units must be greater than 0."
+  }
 }
 
 variable "memory" {
   description = "Amount (in MiB) of memory used by the task."
   type        = number
   default     = 512
+  validation {
+    condition     = var.memory > 0
+    error_message = "Amount of memory must be greater than 0."
+  }
 }
 
-variable "task_role_arn" {
-  description = "ARN of IAM role that allows your Amazon ECS container task to make calls to other AWS services."
+variable "task_role_name" {
+  description = "Name of IAM role that allows your Amazon ECS container task to make calls to other AWS services."
   type        = string
   default     = null
 }
 
-variable "execution_role_arn" {
-  description = "ARN of the task execution role that the Amazon ECS container agent and the Docker daemon can assume."
+variable "execution_role_name" {
+  description = "Name of the task execution role that the Amazon ECS container agent and the Docker daemon can assume."
   type        = string
   default     = null
 }
@@ -50,22 +58,24 @@ variable "container_memory" {
   EOF
   type        = number
   default     = 256
+  validation {
+    condition     = var.container_memory > 0
+    error_message = "Amount of memory must be greater than 0."
+  }
 }
 
 variable "container_cpu" {
   description = "The number of cpu units the Amazon ECS container agent reserves for the container."
   type        = number
   default     = 128
+  validation {
+    condition     = var.container_cpu > 0
+    error_message = "CPU units must be greater than 0."
+  }
 }
 
 variable "container_port" {
   description = "The port number on the container that's bound to the user-specified or automatically assigned host port."
-  type        = number
-  default     = 80
-}
-
-variable "host_port" {
-  description = "The port number on the container instance to reserve for your container."
   type        = number
   default     = 8080
 }
@@ -75,8 +85,8 @@ variable "awslogs_region" {
   type        = string
 }
 
-variable "num_instances" {
-  description = "Number of Amazon EC2 instances of container images that should be running on ECS cluster."
+variable "desired_count" {
+  description = "Number of instances of the task definition to place and keep running."
   type        = number
   default     = 2
 }
@@ -89,4 +99,21 @@ variable "subnet_ids" {
 variable "alb_target_group_arn" {
   description = "ARN of the ALB security group"
   type        = string
+}
+
+variable "logs_retention" {
+  description = "Logs retentions in days  for CloudWatch."
+  type        = number
+  default     = 7
+}
+
+variable "vpc_id" {
+  description = "VPC ID."
+  type        = string
+}
+
+variable "alb_security_group_id" {
+  description = "ALB security group ID."
+  type        = string
+  default     = null
 }
