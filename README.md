@@ -1,96 +1,152 @@
 # Terraform ECS-EC2 basic infrastructure
 
-Este proyecto utiliza Terraform para desplegar una infraestructura en AWS que incluye:
+This project uses **Terraform** to deploy infrastructure on **AWS** that includes:
 
-- Una red VPC con subredes públicas y privadas.
-- Un Application Load Balancer (ALB) para enrutar el tráfico.
-- Instancias EC2 gestionadas por un Auto Scaling Group.
-- Tareas ECS para ejecutar contenedores Docker.
-- Configuración de un registro DNS en Route 53.
+- A **VPC** network with public and private subnets, internet gateway and nat gateways.
+- An **Application Load Balancer (ALB)** to route traffic.
+- **EC2** instances managed by an **Auto Scaling Group**.
+- **ECS** tasks to run containers.
+- A **DNS record** on **Route53** to call the alb using an alias.
 
-![architecture]()
+![architecture](images/architecture.png)
 
 > [!note]
-> El proyecto esta hecho para actuar como una plantilla personalizable. Estableciendo los valores deseados en las variables; Las propiedades opcionales pueden ser retiradas borrando la propiedad del modulo; Los modulos se pueden omitir o reutilizar simplemente borrando o agregando los bloques en el archivo main.tf respectivamente.
+> This project is designed as a customizable template. You can modify variables, remove optional modules, or reuse modules according to your needs.
 
-## Requisitos Previos
+## Requirements
 
-- Terraform (versión >= 1.0.0).
-- AWS CLI configurado con credenciales válidas (Si se ejecuta en local).
+1. **Terraform**: versión >= 1.0.0.
+2. **AWS account**:
+    - Permissions to create the resources (VPC, IGW, NGW, EIP, ECS, EC2, IAM y Route53).
+    - A **domain registered on Route53** (Only if `route53` module is used).
+3. **AWS CLI** with credentials configured.
 
-Configuración de AWS:
+## How to modify the settings?
 
-- Una cuenta de AWS con permisos para crear recursos como VPC, ALB, ECS, EC2, y Route 53.
-- Un dominio registrado en Route 53 (si se usa el módulo **`route53`**).
+- **Variables:** Modify variables in `terraform.tfvars` to customize the infrastructure (see example below).
+- **Modules:** Modules in `terraform/modules` can be reused or removed according to your needs.
+- **ALB Configuration:** You can adjust listeners, SSL policies, and routing rules in the `alb` module.
+- **ECS Tasks:** Change ECS task settings, such as the container image, CPU, memory, and ports.
 
-## Variables Principales
+**`terraform.tfvars` example:**
 
-A continuación, se describen las variables utilizadas en el proyecto:
+```hcl
+cidr_block         = "10.0.0.0/16"
+public_subnets     = ["10.0.0.0/24", "10.0.1.0/24"]
+private_subnets    = ["10.0.2.0/24", "10.0.3.0/24"]
+enable_nat_gateway = true
+certificate_arn    = "arn:aws:acm:region:account-id:certificate/certificate-id"
+domain_name        = "example.com"
+subdomain_name     = "app"
 
-| Variable | Descripción | Valor por defecto |
-|----------|-------------|-------------------|
-| `local.name` | Nombre base para los recursos. | "my-app" |
-| `local.region` | Región de AWS donde se desplegarán los recursos. | "us-east-1" |
-| `cidr_block` | Rango de direcciones IP para la VPC. | "10.0.0.0/16" |
-| `public_subnets` | Subredes públicas. | ["10.0.0.0/24", "10.0.1.0/24"] |
-| `private_subnets` | Subredes privadas. | ["10.0.2.0/24", "10.0.3.0/24"] |
+ec2_config = {
+  image                  = "nginx:latest"
+  container_port         = 80
+  instance_type          = "t2.micro"
+  volume_size            = 8
+  volume_type            = "gp3"
+  ssh_security_group_ids = []
+  num_instances          = 2
+  task_role_name         = null
+}
+```
 
-## Usage
+### Main variables
 
-### In local
+| Variable              | Descripción                                                   | Valor por defecto                |
+|-----------------------|---------------------------------------------------------------|----------------------------------|
+| `local.name`          | Name prefix for all resources deployed with terraform.        | `"tf-test-webapp"`               |
+| `local.region`        | AWS region.                                                   | `"us-east-1"`                    |
+| `cidr_block`          | IP address range for the VPC.                                 | `"10.0.0.0/16"`                  |
+| `public_subnets`      | Public subnets.                                               | `["10.0.0.0/24", "10.0.1.0/24"]` |
+| `private_subnets`     | Private subents.                                              | `["10.0.2.0/24", "10.0.3.0/24"]` |
+| `enable_nat_gateway`  | Enable NAT Gateways for private subnets.                      | `true`                           |
+| `certificate_arn`     | SSL certificate ARN for the ALB.                              | `""`                             |
+| `domain_name`         | Domain name registered on Route53.                            | `"example.com"`                  |
+| `subdomain_name`      | Subdomain for DNS record.                                     | `"www"`                          |
+| `ec2_config`          | Configuring EC2 instances and ECS tasks (see example above).  | `{}`                             |
 
-**Asegurate de modificar el archivo `backend.tf`** para usar `local` en lugar de `http`.
+### Main components
+
+*VPC*:
+
+- Public and private subnets.
+- Internet gateway and NAT gateway (optional).
+- Route tables to segment traffic.
+
+*Application Load Balancer (ALB)*:
+
+- HTTP/HTTPS traffic balancing.
+- Listeners configured to redirect HTTP traffic to HTTPS (if an SSL certificate is provided).
+
+*EC2 Instances*:
+
+- Configured to run the ECS agent.
+- Managed by an Auto Scaling Group.
+
+*ECS Tasks*:
+
+- Configure tasks to run Docker containers.
+- Integration with the ALB to route traffic to containers.
+
+*Route 53*:
+
+- DNS record to map a subdomain to the ALB.
+
+> [!note]
+>
+> - **IAM Roles**: If you don't specify custom roles, default roles will be created with the necessary permissions.
+> - **Private Images**: If you use private images in ECR, ensure that the ECS execution role has permissions to authenticate with ECR.
+> - **SSL Certificates**: If you don't provide a certificate ARN, the ALB will only accept HTTP traffic.
+
+## How to run it?
+
+### Local execution
 
 ```shell
-# Move into the base directory
-cd terraform-ecs-ci
+# 1. Clone the repository
+git clone https://github.com/Joel252/terraform-ecs-ci.git
+cd terraform-ecs-ci/terraform
 
-# Sets up Terraform
+# 2. Initialize Terraform
 terraform init
 
-# Previews actions
-terraform plan
+# 3. Preview changes
+terraform plan -out=tfplan
 
-# Executes the Terraform run
-terraform apply
+# 4. Apply changes
+terraform apply tfplan
 
-# Destroy infrastructure (Only if necessary)
+# 5. Destroy infrastructure (Only if necessary)
 terraform destroy
 ```
 
-En este caso el archivo `.tfstate` se alojara en el directorio del proyecto.
-
-### Automated
-
-El proyecto cuenta con una pipeline para facilitar el despliegue de la infraestructura. Basta con subir este proyecto en GitLab para su ejecución y seguir los siguientes pasos:
-
-1. Crea un nuevo repositorio en GitLab basado en este template.
-2. Configura las variables de GitLab CI/CD en Settings > CI/CD > Variables:
-    - AWS_ACCESS_KEY_ID
-    - AWS_SECRET_ACCESS_KEY
-    - CI_REGISTRY_USER
-    - CI_REGISTRY_PASSWORD
-
-3. Realiza un commit en la rama main para que GitLab ejecute el pipeline automáticamente.
-4. Verifica en AWS ECS que el servicio está corriendo con la imagen de GitLab Container Registry.
-
 > [!note]
->
-> - Asegúrate de que las políticas de IAM estén correctamente configuradas para permitir que ECS y EC2 accedan a los recursos necesarios.
-> - Si usas imágenes privadas de ECR, verifica que el rol de ejecución de ECS tenga permisos para autenticarse con ECR.
->
-> _En el caso de no especificar ningún rol, se crearan roles por defecto con estos permisos incluidos._
+> **Make sure to modify the `backend.tf` file** to use local storage (`local`) instead of remote storage (`http`) if you don't need it; otherwise, add your storage configuration. If you're using local storage, the `terraform.tfstate` file is located in the project directory.
 
-## Pipeline flow
+### Automated execution with GitLab CI/CD
 
-- Validate: Validación de archivos de configuración de Terraform.
-- Plan: Generación de un plan de ejecución para revisar cambios en la infraestructura.
-- Apply: Aplicación de cambios en la infraestructura usando Terraform.
-- Deploy: Despliegue de la imagen de la aplicación en los ambientes objetivo (desarrollo o producción).
-- Destroy: Eliminación de recursos de infraestructura cuando sea necesario.
+The project has a pipeline to facilitate infrastructure deployment.
+
+1. **Upload the project to GitLab:** Create a new repository in GitLab and upload the project files.
+2. **Setup CI/CD variables:** Go to `Settings > CI/CD > Variables` and add the following variables:
+    - `AWS_ACCESS_KEY_ID`
+    - `AWS_SECRET_ACCESS_KEY`
+
+    ![gitlab variables](images/variables.png)
+3. **Run the pipeline:** Commit to the `main` or `dev` branch to have GitLab automatically run the pipeline.
+4. **Verify deployment:**
+
+    - Review the pipeline logs to confirm that the infrastructure was created correctly.
+    - Access the deployed service through the domain configured in Route 53.
+
+#### Pipeline flow
+
+1. **`update_docs`:** Updates the Terraform documentation if it detects changes in the files
+2. **`terraform_init`:** Initializes Terraform.
+3. **`terraform_validate`:** Validates Terraform configuration files.
+4. **`terraform_plan`:** Generates an execution plan to make changes to the infrastructure.
+5. **`terraform_apply`:** Apply changes to your infrastructure using Terraform.
+6. **`terraform_destroy`:** Removes infrastructure resources when necessary.
 
 ![pipeline flow]()
-
-## Overview
-
-![overview]()
