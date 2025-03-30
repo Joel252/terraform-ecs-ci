@@ -18,23 +18,8 @@ variable "enable_nat_gateway" {
   type        = bool
 }
 
-variable "single_nat_gateway" {
-  description = "Whether to use a single NAT Gateway"
-  type        = bool
-}
-
 variable "certificate_arn" {
   description = "ARN of the SSL certificate for the ALB"
-  type        = string
-}
-
-variable "container_port" {
-  description = "Port for ECS container"
-  type        = number
-}
-
-variable "target_protocol" {
-  description = "Target protocol for the ALB"
   type        = string
 }
 
@@ -43,62 +28,21 @@ variable "domain_name" {
   type        = string
 }
 
-variable "instance_type" {
-  description = "Instance type for EC2 instances"
+variable "subdomain_name" {
+  description = "Subdomain name to create a record in Route53"
   type        = string
 }
 
-variable "volume_size" {
-  description = "Volume size for EC2 instances"
-  type        = number
-}
-
-variable "volume_type" {
-  description = "Volume type for EC2 instances"
-  type        = string
-}
-
-variable "ssh_security_group_ids" {
-  description = "List of Security Group IDs to allow access to the instance via SSH."
-  type        = list(string)
-}
-
-variable "num_instances" {
-  description = "Number of EC2 instances"
-  type        = number
-}
-
-variable "min_instances" {
-  description = "Minimum number of EC2 instances"
-  type        = number
-}
-
-variable "max_instances" {
-  description = "Maximum number of EC2 instances"
-  type        = number
-}
-
-# ECS task role name
-variable "task_role_name" {
-  description = "IAM role name for ECS tasks"
-  type        = string
-  default     = null
-}
-
-# ECS execution role name
-variable "execution_role_name" {
-  description = "IAM role name for ECS task execution"
-  type        = string
-  default     = null
-}
-
-# Container image for ECS tasks
-variable "image" {
-  description = "Container image for ECS tasks"
-  type        = string
-}
-
-variable "desired_count" {
-  description = "Desired number of ECS tasks"
-  type        = number
+variable "ec2_config" {
+  description = "Instance configuration"
+  type = object({
+    image                  = string
+    container_port         = number
+    instance_type          = string
+    volume_size            = number
+    volume_type            = string
+    ssh_security_group_ids = list(string)
+    num_instances          = number
+    task_role_name         = string
+  })
 }
