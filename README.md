@@ -66,46 +66,6 @@ ec2_config = {
 | `subdomain_name`      | Subdomain for DNS record.                                     | `"www"`                          |
 | `ec2_config`          | Configuring EC2 instances and ECS tasks (see example above).  | `{}`                             |
 
-### Main Components
-
-#### 1. **VPC (Virtual Private Cloud)**
-
-| **Feature**       | **Description**                                                                 |
-|--------------------|---------------------------------------------------------------------------------|
-| **Subnets**        | Includes both public and private subnets for resource segmentation.            |
-| **Gateways**       | - Internet Gateway (IGW) for public subnet internet access.                    |
-|                    | - Optional NAT Gateway (NGW) for private subnet internet access.               |
-| **Route Tables**   | Configured to manage traffic flow between subnets and gateways.                |
-
-#### 2. **Application Load Balancer (ALB)**
-
-| **Feature**       | **Description**                                                                 |
-|--------------------|---------------------------------------------------------------------------------|
-| **Traffic Management** | - Balances HTTP/HTTPS traffic across ECS tasks or EC2 instances.           |
-|                    | - Redirects HTTP traffic to HTTPS if an SSL certificate is provided.           |
-| **Listeners**      | Configurable for custom SSL policies and routing rules.                        |
-
-#### 3. **EC2 Instances**
-
-| **Feature**       | **Description**                                                                 |
-|--------------------|---------------------------------------------------------------------------------|
-| **ECS Agent**      | Pre-configured to run the ECS agent for container orchestration.               |
-| **Auto Scaling**   | Automatically adjusts the number of instances based on demand.                 |
-
-#### 4. **ECS Tasks**
-
-| **Feature**       | **Description**                                                                 |
-|--------------------|---------------------------------------------------------------------------------|
-| **Containerized Workloads** | Runs Docker containers with customizable CPU, memory, and port configurations. |
-| **ALB Integration** | Routes traffic from the ALB to the running containers.                        |
-
-#### 5. **Route 53 (DNS)**
-
-| **Feature**       | **Description**                                                                 |
-|--------------------|---------------------------------------------------------------------------------|
-| **DNS Records**    | Maps a subdomain (e.g., `www.example.com`) to the ALB using an alias record.   |
-| **Domain Management** | Requires a domain registered in Route 53.                                   |
-
 ## How to run it?
 
 ### Local execution
