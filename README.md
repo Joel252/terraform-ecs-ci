@@ -66,38 +66,45 @@ ec2_config = {
 | `subdomain_name`      | Subdomain for DNS record.                                     | `"www"`                          |
 | `ec2_config`          | Configuring EC2 instances and ECS tasks (see example above).  | `{}`                             |
 
-### Main components
+### Main Components
 
-*VPC*:
+#### 1. **VPC (Virtual Private Cloud)**
 
-- Public and private subnets.
-- Internet gateway and NAT gateway (optional).
-- Route tables to segment traffic.
+| **Feature**       | **Description**                                                                 |
+|--------------------|---------------------------------------------------------------------------------|
+| **Subnets**        | Includes both public and private subnets for resource segmentation.            |
+| **Gateways**       | - Internet Gateway (IGW) for public subnet internet access.                    |
+|                    | - Optional NAT Gateway (NGW) for private subnet internet access.               |
+| **Route Tables**   | Configured to manage traffic flow between subnets and gateways.                |
 
-*Application Load Balancer (ALB)*:
+#### 2. **Application Load Balancer (ALB)**
 
-- HTTP/HTTPS traffic balancing.
-- Listeners configured to redirect HTTP traffic to HTTPS (if an SSL certificate is provided).
+| **Feature**       | **Description**                                                                 |
+|--------------------|---------------------------------------------------------------------------------|
+| **Traffic Management** | - Balances HTTP/HTTPS traffic across ECS tasks or EC2 instances.           |
+|                    | - Redirects HTTP traffic to HTTPS if an SSL certificate is provided.           |
+| **Listeners**      | Configurable for custom SSL policies and routing rules.                        |
 
-*EC2 Instances*:
+#### 3. **EC2 Instances**
 
-- Configured to run the ECS agent.
-- Managed by an Auto Scaling Group.
+| **Feature**       | **Description**                                                                 |
+|--------------------|---------------------------------------------------------------------------------|
+| **ECS Agent**      | Pre-configured to run the ECS agent for container orchestration.               |
+| **Auto Scaling**   | Automatically adjusts the number of instances based on demand.                 |
 
-*ECS Tasks*:
+#### 4. **ECS Tasks**
 
-- Configure tasks to run Docker containers.
-- Integration with the ALB to route traffic to containers.
+| **Feature**       | **Description**                                                                 |
+|--------------------|---------------------------------------------------------------------------------|
+| **Containerized Workloads** | Runs Docker containers with customizable CPU, memory, and port configurations. |
+| **ALB Integration** | Routes traffic from the ALB to the running containers.                        |
 
-*Route 53*:
+#### 5. **Route 53 (DNS)**
 
-- DNS record to map a subdomain to the ALB.
-
-> [!note]
->
-> - **IAM Roles**: If you don't specify custom roles, default roles will be created with the necessary permissions.
-> - **Private Images**: If you use private images in ECR, ensure that the ECS execution role has permissions to authenticate with ECR.
-> - **SSL Certificates**: If you don't provide a certificate ARN, the ALB will only accept HTTP traffic.
+| **Feature**       | **Description**                                                                 |
+|--------------------|---------------------------------------------------------------------------------|
+| **DNS Records**    | Maps a subdomain (e.g., `www.example.com`) to the ALB using an alias record.   |
+| **Domain Management** | Requires a domain registered in Route 53.                                   |
 
 ## How to run it?
 
@@ -148,5 +155,3 @@ The project has a pipeline to facilitate infrastructure deployment.
 4. **`terraform_plan`:** Generates an execution plan to make changes to the infrastructure.
 5. **`terraform_apply`:** Apply changes to your infrastructure using Terraform.
 6. **`terraform_destroy`:** Removes infrastructure resources when necessary.
-
-![pipeline flow]()
